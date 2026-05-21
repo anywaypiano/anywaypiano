@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Piano</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #f0ede8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  user-select: none;
+  -webkit-user-select: none; /* ป้องกันการขึ้นไฮไลท์สีฟ้าเวลาสไลด์บน iOS */
+  padding: 20px 10px;
+}
+
+/* ── Dropdown เลือกเพลง (Responsive) ── */
+.song-selector-container {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+  justify-content: center;
+}
+
+.song-label-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1a1008;
+}
+
+.song-select {
+  padding: 8px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+  background-color: #1a1008;
+  border: 2px solid #8a7a60;
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.2s;
+  max-width: 80%;
+}
+
+.song-select:hover {
+  background-color: #2a1e13;
+  border-color: #c8a96e;
+}
+
+/* ── ตัวห่อหุ้มเปียโนภายนอก (หัวใจสำคัญของ Responsive มือถือ) ── */
+.piano-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto; /* เปิดให้เลื่อนซ้ายขวาได้บนมือถือ */
+  padding: 10px 0 25px 0;
+  display: flex;
+  justify-content: flex-start;
+  -webkit-overflow-scrolling: touch; /* เลื่อนสไลด์ได้ลื่นไหลใน iOS */
+}
+
+/* จัดกึ่งกลางบนจอคอมพิวเตอร์ */
+@media (min-width: 1200px) {
+  .piano-wrapper {
+    justify-content: center;
+  }
+}
+
+.piano-container {
+  background: #1a1008;
+  border-radius: 12px;
+  padding: 24px 28px 32px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  display: inline-block; /* ป้องกันไม่ให้ขนาดกรอบหดสั้น */
+}
+
+.piano-label {
+  color: #8a7a60;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.piano-keys {
+  position: relative;
+  display: flex;
+  height: 200px;
+}
+
+/* ── WHITE KEYS ── */
+.wkey {
+  position: relative;
+  width: 46px;
+  height: 200px;
+  background: linear-gradient(to bottom, #f5f3ef 0%, #fffdf8 60%, #f0ece3 100%);
+  border: 1px solid #bbb;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  margin-right: 2px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 10px;
+  gap: 4px;
+  transition: background 0.05s;
+  box-shadow: inset 0 -3px 6px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.25);
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.wkey:last-child { margin-right: 0; }
+
+.wkey:hover {
+  background: linear-gradient(to bottom, #eceae5 0%, #f5f3ee 60%, #e5e0d7 100%);
+}
+
+.wkey.pressed, .wkey.active {
+  background: linear-gradient(to bottom, #d4cfc5 0%, #e8e3d8 60%, #cec9be 100%) !important;
+  box-shadow: inset 0 3px 8px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.3);
+  transform: translateY(1px);
+}
+
+.note-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: #888;
+  letter-spacing: 0.5px;
+}
+
+.kbd-hint {
+  font-size: 12px;
+  font-weight: 700;
+  color: #aaa;
+  background: rgba(0,0,0,0.07);
+  border-radius: 4px;
+  width: 24px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── BLACK KEYS ── */
+.bkey {
+  position: absolute;
+  top: 0;
+  width: 30px;
+  height: 124px;
+  background: linear-gradient(to bottom, #2a2520 0%, #1a1208 50%, #0d0a06 100%);
+  border-radius: 0 0 5px 5px;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+  gap: 3px;
+  box-shadow: 2px 4px 10px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: background 0.05s;
+}
+
+.bkey:hover {
+  background: linear-gradient(to bottom, #3a3530 0%, #2a2218 50%, #1d1a10 100%);
+}
+
+.bkey.pressed, .bkey.active {
+  background: linear-gradient(to bottom, #1a1510 0%, #120e08 50%, #0a0806 100%) !important;
+  box-shadow: 1px 2px 5px rgba(0,0,0,0.8), inset 0 2px 4px rgba(0,0,0,0.5);
+  transform: translateY(1px);
+}
+
+.bkey .note-name {
+  color: #666;
+  font-size: 9px;
+}
+
+.bkey .kbd-hint {
+  color: #888;
+  background: rgba(255,255,255,0.06);
+  font-size: 11px;
+  width: 20px;
+  height: 17px;
+}
+
+/* octave divider */
+.octave-mark {
+  position: absolute;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  height: 16px;
+  background: #c8a96e;
+  border-radius: 1px;
+  opacity: 0.6;
+}
+
+.octave-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: #8a7a60;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+/* ── กล่องโชว์โน้ตเพลง (Responsive) ── */
+.sheet-music-container {
+  margin-top: 15px;
+  background: #ffffff;
+  border: 2px solid #1a1008;
+  border-radius: 8px;
+  padding: 15px 20px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  display: none;
+}
+
+.sheet-music-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1a1008;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #e0ece3;
+  padding-bottom: 5px;
+}
+
+.sheet-music-notes {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 15px;
+  font-weight: bold;
+  color: #2b1d11;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto; /* หากบรรทัดยาวเกินไปให้เลื่อนในกล่องโน้ตได้ */
+}
+
+/* ── ข้อความคำแนะนำด้านนอกกรอบเปียโน ── */
+.piano-hint-text {
+  color: #1a1008;
+  font-size: 15px;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 20px;
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+  width: 100%;
+  max-width: 600px;
+  padding: 0 10px;
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+</head>
+<body>
+
+<div class="song-selector-container">
+  <span class="song-label-text">เพลง:</span>
+  <select class="song-select" id="songSelect" onchange="changeSong()">
+    <option value="">-- เลือกเพลงเพื่อดูโน้ต --</option>
+    <option value="thousand-years">A Thousand Years</option>
+    <option value="whale">วาฬเกยตื้น</option>
+    <option value="circle-me">เอาปากกามาวง</option>
+  </select>
+</div>
+
+<div class="piano-wrapper">
+  <div class="piano-container">
+    <div class="piano-label">Piano</div>
+    <div class="piano-keys" id="pianoKeys"></div>
+  </div>
+</div>
+
+<div class="sheet-music-container" id="sheetMusicContainer">
+  <div class="sheet-music-title" id="sheetMusicTitle">ชื่อเพลง</div>
+  <pre class="sheet-music-notes" id="sheetMusicNotes"></pre>
+</div>
+
+<div class="piano-hint-text">กดค้างไว้เพื่อให้มีหางเสียงช่วยให้เพลงเพราะขึ้นได้นะ</div>
+
+<script>
+// ข้อมูลโน้ตเพลง
+const SONG_DATA = {
+  'thousand-years': {
+    title: 'A Thousand Years',
+    notes: `--- v]- - - -
+ngv-o ngv]
+vp]-
+--- v]nnnnn- - - -
+ngv-o ngv]
+vp]-
+m,l ,
+vnv vnv mn]-
+vnv vnv mn]-
+-]g v o -]-]gvn`
+  },
+  'whale': {
+    title: 'วาฬเกยตื้น',
+    notes: `797[[0 7079-9      7-97u0u      6u6 9-9      
+797[[0 7079-9      9iu 0u       6u6 99
+ 
+[[[[[f-9      90[090967
+[[[[[f-9      90[ 090
+9gf
+ 
+90g jgf      0[f[09
+990[g gjf      f[[[
+09
+ 
+gf[g gf[f
+fgf[ 0[09g
+9fgf [009
+jkg
+90[ 90[ [f[`
+  },
+  'circle-me': {
+    title: 'เอาปากกามาวง',
+    notes: `jmjbjjjbj,,
+p,mjbjjjbj.,
+j b vvvv[
+jbvvvv[
+j,,j,j j j jb
+bbjm vbv`
+  }
+};
+
+function changeSong() {
+  const selectElement = document.getElementById('songSelect');
+  const container = document.getElementById('sheetMusicContainer');
+  const titleElement = document.getElementById('sheetMusicTitle');
+  const notesElement = document.getElementById('sheetMusicNotes');
+  
+  const selectedValue = selectElement.value;
+  
+  if (selectedValue && SONG_DATA[selectedValue]) {
+    titleElement.textContent = SONG_DATA[selectedValue].title;
+    notesElement.textContent = SONG_DATA[selectedValue].notes;
+    container.style.display = 'block';
+  } else {
+    container.style.display = 'none';
+  }
+}
+
+/*
+  Musicca piano keyboard mapping (verified):
+*/
+const KEYS = [
+  // Octave 3
+  { key:'z', note:'C',  oct:3, type:'w', freq:130.81 },
+  { key:'s', note:'C#', oct:3, type:'b', freq:138.59 },
+  { key:'x', note:'D',  oct:3, type:'w', freq:146.83 },
+  { key:'d', note:'D#', oct:3, type:'b', freq:155.56 },
+  { key:'c', note:'E',  oct:3, type:'w', freq:164.81 },
+  { key:'q', note:'F',  oct:3, type:'w', freq:174.61 },
+  { key:'2', note:'F#', oct:3, type:'b', freq:185.00 },
+  { key:'w', note:'G',  oct:3, type:'w', freq:196.00 },
+  { key:'3', note:'G#', oct:3, type:'b', freq:207.65 },
+  { key:'e', note:'A',  oct:3, type:'w', freq:220.00 },
+  { key:'4', note:'A#', oct:3, type:'b', freq:233.08 },
+  { key:'r', note:'B',  oct:3, type:'w', freq:246.94 },
+
+  // Octave 4
+  { key:'t', note:'C',  oct:4, type:'w', freq:261.63 },
+  { key:'6', note:'C#', oct:4, type:'b', freq:277.18 },
+  { key:'y', note:'D',  oct:4, type:'w', freq:293.66 },
+  { key:'7', note:'D#', oct:4, type:'b', freq:311.13 },
+  { key:'u', note:'E',  oct:4, type:'w', freq:329.63 },
+  { key:'i', note:'F',  oct:4, type:'w', freq:349.23 },
+  { key:'9', note:'F#', oct:4, type:'b', freq:369.99 },
+  { key:'o', note:'G',  oct:4, type:'w', freq:392.00 },
+  { key:'0', note:'G#', oct:4, type:'b', freq:415.30 },
+  { key:'p', note:'A',  oct:4, type:'w', freq:440.00 },
+  { key:'-', note:'A#', oct:4, type:'b', freq:466.16 },
+  { key:'[', note:'B',  oct:4, type:'w', freq:493.88 },
+
+  // Octave 5
+  { key:']', note:'C',  oct:5, type:'w', freq:523.25 },
+  { key:'f', note:'C#', oct:5, type:'b', freq:554.37 },
+  { key:'v', note:'D',  oct:5, type:'w', freq:587.33 },
+  { key:'g', note:'D#', oct:5, type:'b', freq:622.25 },
+  { key:'b', note:'E',  oct:5, type:'w', freq:659.25 },
+  { key:'n', note:'F',  oct:5, type:'w', freq:698.46 },
+  { key:'j', note:'F#', oct:5, type:'b', freq:739.99 },
+  { key:'m', note:'G',  oct:5, type:'w', freq:783.99 },
+  { key:'k', note:'G#', oct:5, type:'b', freq:830.61 },
+  { key:',', note:'A',  oct:5, type:'w', freq:880.00 },
+  { key:'l', note:'A#', oct:5, type:'b', freq:932.33 },
+  { key:'.', note:'B',  oct:5, type:'w', freq:987.77 },
+];
+
+const keyMap = {};
+KEYS.forEach(k => { keyMap[k.key] = k; });
+
+let piano = null;
+
+async function getPiano() {
+  if (piano) return piano;
+  await Tone.start();
+  const reverb = new Tone.Reverb({ decay: 0.8, wet: 0.08 });
+  const lowpass = new Tone.Filter({ type: "lowpass", frequency: 4200 });
+  const compressor = new Tone.Compressor({ threshold: -18, ratio: 3 });
+
+  piano = new Tone.Sampler({
+    urls: {
+      A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
+      A1: "A1.mp3", C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3",
+      A2: "A2.mp3", C3: "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3",
+      A3: "A3.mp3", C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3",
+      A4: "A4.mp3", C5: "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3",
+      A5: "A5.mp3", C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3",
+      A6: "A6.mp3", C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3",
+      A7: "A7.mp3", C8: "C8.mp3"
+    },
+    release: 0.35,
+    baseUrl: "https://tonejs.github.io/audio/salamander/"
+  }).connect(lowpass);
+  lowpass.connect(compressor);
+  compressor.connect(reverb);
+  reverb.toDestination();
+  return piano;
+}
+
+const activeNotes = {};
+
+async function playNote(keyData) {
+  const p = await getPiano();
+  const noteName = keyData.note.replace('#', '#') + keyData.oct;
+  if (activeNotes[keyData.key]) return;
+  p.triggerAttack(noteName, Tone.now(), 0.72);
+  activeNotes[keyData.key] = noteName;
+}
+
+async function stopNote(keyData) {
+  const p = await getPiano();
+  const noteName = activeNotes[keyData.key];
+  if (!noteName) return;
+  p.triggerRelease(noteName, Tone.now() + 0.01);
+  delete activeNotes[keyData.key];
+}
+
+const container = document.getElementById('pianoKeys');
+const whites = KEYS.filter(k => k.type === 'w');
+const blacks = KEYS.filter(k => k.type === 'b');
+const W_WIDTH = 46;
+const W_GAP = 2;
+const UNIT = W_WIDTH + W_GAP;
+const whiteOrder = whites.map((wk, i) => ({ ...wk, wIdx: i }));
+const BLACK_WIDTH = 30;
+
+function blackLeftFor(noteData) {
+  const leftNote = { 'C#':'C', 'D#':'D', 'F#':'F', 'G#':'G', 'A#':'A' }[noteData.note];
+  const leftWhite = whiteOrder.find(w => w.note === leftNote && w.oct === noteData.oct);
+  if (!leftWhite) return null;
+  return leftWhite.wIdx * UNIT + UNIT - BLACK_WIDTH / 2 - 2;
+}
+
+whiteOrder.forEach(wk => {
+  const el = document.createElement('div');
+  el.className = 'wkey';
+  el.id = 'pk-' + wk.key;
+  el.style.position = 'relative';
+
+  if (wk.note === 'C') {
+    const mark = document.createElement('div');
+    mark.className = 'octave-mark';
+    const lbl = document.createElement('div');
+    lbl.className = 'octave-label';
+    lbl.textContent = 'C' + wk.oct;
+    mark.appendChild(lbl);
+    el.appendChild(mark);
+  }
+
+  const noteName = document.createElement('div');
+  noteName.className = 'note-name';
+  noteName.textContent = wk.note + wk.oct;
+
+  const kbdHint = document.createElement('div');
+  kbdHint.className = 'kbd-hint';
+  kbdHint.textContent = wk.key.toUpperCase();
+
+  el.appendChild(noteName);
+  el.appendChild(kbdHint);
+
+  el.addEventListener('mousedown', e => { e.preventDefault(); pressKey(wk.key); });
+  el.addEventListener('mouseup', () => releaseKey(wk.key));
+  el.addEventListener('mouseleave', () => releaseKey(wk.key));
+  el.addEventListener('touchstart', e => { e.preventDefault(); pressKey(wk.key); });
+  el.addEventListener('touchend', () => releaseKey(wk.key));
+
+  container.appendChild(el);
+});
+
+container.style.width = (whiteOrder.length * UNIT - W_GAP) + 'px';
+container.style.position = 'relative';
+
+blacks.forEach(bk => {
+  const left = blackLeftFor(bk);
+  if (left === null) return;
+
+  const el = document.createElement('div');
+  el.className = 'bkey';
+  el.id = 'pk-' + bk.key;
+  el.style.left = left + 'px';
+
+  const noteName = document.createElement('div');
+  noteName.className = 'note-name';
+  noteName.textContent = bk.note + bk.oct;
+
+  const kbdHint = document.createElement('div');
+  kbdHint.className = 'kbd-hint';
+  kbdHint.textContent = bk.key.toUpperCase();
+
+  el.appendChild(noteName);
+  el.appendChild(kbdHint);
+
+  el.addEventListener('mousedown', e => { e.preventDefault(); pressKey(bk.key); });
+  el.addEventListener('mouseup', () => releaseKey(bk.key));
+  el.addEventListener('mouseleave', () => releaseKey(bk.key));
+  el.addEventListener('touchstart', e => { e.preventDefault(); pressKey(bk.key); });
+  el.addEventListener('touchend', () => releaseKey(bk.key));
+
+  container.appendChild(el);
+});
+
+function pressKey(k) {
+  const data = keyMap[k];
+  if (!data) return;
+  const el = document.getElementById('pk-' + k);
+  if (el) el.classList.add('pressed');
+  playNote(data);
+}
+
+function releaseKey(k) {
+  const data = keyMap[k];
+  if (!data) return;
+  const el = document.getElementById('pk-' + k);
+  if (el) el.classList.remove('pressed');
+  stopNote(data);
+}
+
+const heldKeys = new Set();
+
+document.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const k = e.key === ';' ? ';' : e.key === "'" ? "'" : e.key === ']' ? ']' : e.key === '[' ? '[' : e.key === '\\' ? '\\' : e.key === ',' ? ',' : e.key === '.' ? '.' : e.key === '/' ? '/' : e.key.toLowerCase();
+  if (keyMap[k] && !heldKeys.has(k)) {
+    heldKeys.add(k);
+    pressKey(k);
+  }
+});
+
+document.addEventListener('keyup', e => {
+  const k = e.key === ';' ? ';' : e.key === "'" ? "'" : e.key === ']' ? ']' : e.key === '[' ? '[' : e.key === '\\' ? '\\' : e.key === ',' ? ',' : e.key === '.' ? '.' : e.key === '/' ? '/' : e.key.toLowerCase();
+  heldKeys.delete(k);
+  releaseKey(k);
+});
+</script>
+</body>
+</html>
