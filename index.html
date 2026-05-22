@@ -276,7 +276,6 @@ body {
     <option value="thousand-years">A Thousand Years</option>
     <option value="whale">วาฬเกยตื้น</option>
     <option value="circle-me">เอาปากกามาวง</option>
-    <option value="perfect-ed">Perfect - Ed Sheeran</option>
   </select>
 </div>
 
@@ -302,7 +301,7 @@ const SONG_DATA = {
     notes: `--- v]- - - -
 ngv-o ngv]
 vp]-
---- v]- - - -
+--- v]nnnnn- - - -
 ngv-o ngv]
 vp]-
 m,l ,
@@ -329,21 +328,6 @@ fgf[ 0[09g
 jkg
 90[ 90[ [f[`
   },
-  'perfect-ed': {
-    title: 'Perfect - Ed Sheeran',
-    notes: `yvvvb pp [ [ [      [po [ [ [
-[po] [ o y [       ][p
-[po [ [ [
-[po [ [ [
-[po] [ o y p
-vvvbpo o
-mjbj[      ov][ oo
-mjb o[      vvvvb [po
-[v mjbj[
-op[v     ][ ][ p
-]  [ op[  p 
-p o o o`
-  },
   'circle-me': {
     title: 'เอาปากกามาวง',
     notes: `jmjbjjjbj,,
@@ -363,11 +347,17 @@ function changeSong() {
   
   const selectedValue = selectElement.value;
   
-  // ล็อกให้อยู่ในสถานะเปิดตราบใดที่ยังเลือกเพลงอยู่ (แม้จะกดปุ่มลบ หรือปุ่มอื่น ๆ บนคีย์บอร์ด)
   if (selectedValue && SONG_DATA[selectedValue]) {
     titleElement.textContent = SONG_DATA[selectedValue].title;
     notesElement.textContent = SONG_DATA[selectedValue].notes;
     container.style.display = 'block';
+    
+    // 🔥 แก้ไขจุดนี้: ใช้ setTimeout ดีเลย์ 10 มิลลิวินาที 
+    // เพื่อบังคับให้ระบบดีดโฟกัสออกจาก Dropdown ทันทีแบบไร้รอยต่อ
+    setTimeout(() => {
+      selectElement.blur();
+    }, 10);
+    
   } else {
     container.style.display = 'none';
   }
@@ -430,7 +420,7 @@ async function getPiano() {
   await Tone.start();
   const reverb = new Tone.Reverb({ decay: 0.8, wet: 0.08 });
   const lowpass = new Tone.Filter({ type: "lowpass", frequency: 4200 });
-  const compressor = new Tone.Compressor({ threshold: -18, ratio: 3 });
+  const compressor = new Compressor({ threshold: -18, ratio: 3 });
 
   piano = new Tone.Sampler({
     urls: {
