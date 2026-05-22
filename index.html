@@ -363,6 +363,7 @@ function changeSong() {
   
   const selectedValue = selectElement.value;
   
+  // ล็อกให้อยู่ในสถานะเปิดตราบใดที่ยังเลือกเพลงอยู่ (แม้จะกดปุ่มลบ หรือปุ่มอื่น ๆ บนคีย์บอร์ด)
   if (selectedValue && SONG_DATA[selectedValue]) {
     titleElement.textContent = SONG_DATA[selectedValue].title;
     notesElement.textContent = SONG_DATA[selectedValue].notes;
